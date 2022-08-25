@@ -18,7 +18,7 @@ class Lane:
         self.metadata = metadata or {}
 
     def __repr__(self):
-        return '[Lane]\n' + str(self.points) + '\n[/Lane]'
+        return '<Lane>' + str(self.points) + '</Lane>'
 
     def __call__(self, lane_ys):
         lane_xs = self.function(lane_ys)

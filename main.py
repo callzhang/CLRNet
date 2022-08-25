@@ -13,8 +13,9 @@ from clrnet.datasets import build_dataloader
 
 def main():
     args = parse_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(
-        str(gpu) for gpu in args.gpus)
+    if isinstance(args.gpus, int):
+        args.gpus = [args.gpus] 
+    os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(str(gpu) for gpu in args.gpus)
 
     cfg = Config.fromfile(args.config)
     cfg.gpus = len(args.gpus)
@@ -41,13 +42,15 @@ def main():
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
-    parser.add_argument('config', help='train config file path')
+    parser.add_argument('--config', 
+                        default='configs/clrnet/clr_dla34_culane.py',
+                        help='train config file path')
     parser.add_argument('--work_dirs',
                         type=str,
                         default=None,
                         help='work dirs')
     parser.add_argument('--load_from',
-                        default=None,
+                        default='weights/culane_dla34.pth',
                         help='the checkpoint file to load from')
     parser.add_argument('--resume_from',
             default=None,
@@ -55,14 +58,14 @@ def parse_args():
     parser.add_argument('--finetune_from',
             default=None,
             help='the checkpoint file to resume from')
-    parser.add_argument('--view', action='store_true', help='whether to view')
+    parser.add_argument('--view', action='store_false', help='whether to view')
     parser.add_argument(
         '--validate',
         action='store_true',
         help='whether to evaluate the checkpoint during training')
     parser.add_argument(
         '--test',
-        action='store_true',
+        action='store_false',
         help='whether to test the checkpoint on testing set')
     parser.add_argument('--gpus', nargs='+', type=int, default='0')
     parser.add_argument('--seed', type=int, default=0, help='random seed')
