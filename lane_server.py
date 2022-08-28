@@ -68,7 +68,7 @@ def process(img_path, cut:int=0):
         cut = int(img.shape[0] * 0.4)
     cfg.cut_height = cut
     cfg.ori_img_h, cfg.ori_img_w = img.shape[:2]
-    cfg.sample_y = range(cfg.ori_img_h, cut, -20)
+    cfg.sample_y = range(cfg.ori_img_h, cut, -10)
     img = img[cut:, :, :]
     
     sample = {'img': img, 'lanes': []}
@@ -88,7 +88,7 @@ def test():
 @app.post('/inference')
 @torch.no_grad()
 @torch.autocast('cuda')
-def inference(image=File(default=None), cut:int = 0, render:bool=False, threshold:float = 0.4):
+def inference(image=File(default=None), cut:int = 0, render:bool=False, threshold:float = 0.2):
     img_path = f'cache/{image.filename}'
     with open(img_path, 'wb') as f:
         f.write(image.file.read())
@@ -107,7 +107,7 @@ def inference(image=File(default=None), cut:int = 0, render:bool=False, threshol
         img = cv2.imread(img_path)
         out_file = f"output/{img_path.split('/')[-1]}"
         imshow_lanes(img, lanes, out_file=out_file)
-        return FileResponse(out_file, media_type="image/png")
+        return FileResponse(out_file)
     else:
         result = {'lanes': lanes, 'scores': scores}
         return result
