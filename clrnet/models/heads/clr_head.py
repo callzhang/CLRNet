@@ -313,7 +313,7 @@ class CLRHead(nn.Module):
                         metadata={
                             'start_x': lane[3],
                             'start_y': lane[2],
-                            'conf': lane[1]
+                            'conf': lane[:2].softmax(dim=0)[1].item()  #lane[1]
                         })
             lanes.append(lane)
         return lanes
@@ -436,17 +436,16 @@ class CLRHead(nn.Module):
 
         return return_value
 
-
-    def get_lanes(self, output, as_lanes=True):
+    def get_lanes(self, output, as_lanes=True, threshold=None):
         '''
         Convert model output to lanes.
         '''
         softmax = nn.Softmax(dim=1)
-
+        if not threshold:
+            threshold = self.cfg.test_parameters.conf_threshold
         decoded = []
         for predictions in output:
             # filter out the conf lower than conf threshold
-            threshold = self.cfg.test_parameters.conf_threshold
             scores = softmax(predictions[:, :2])[:, 1]
             keep_inds = scores >= threshold
             predictions = predictions[keep_inds]
@@ -459,8 +458,7 @@ class CLRHead(nn.Module):
             nms_predictions = torch.cat(
                 [nms_predictions[..., :4], nms_predictions[..., 5:]], dim=-1)
             nms_predictions[..., 4] = nms_predictions[..., 4] * self.n_strips
-            nms_predictions[...,
-                            5:] = nms_predictions[..., 5:] * (self.img_w - 1)
+            nms_predictions[..., 5:] = nms_predictions[..., 5:] * (self.img_w - 1)
 
             keep, num_to_keep, _ = nms(
                 nms_predictions,
