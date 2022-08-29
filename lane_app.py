@@ -26,3 +26,13 @@ if file:
         image = Image.open(BytesIO(r.content))
         st.image(image, caption='车道线可视化', use_column_width=True)
 
+st.header('')
+st.header('')
+st.header('')
+st.header('')
+st.header('')
+st.image(
+    'http://work.startask.net/static/media/logo2.0b1967eb.png',
+    caption='Copyright Stardust @2022',
+    width=200
+)
