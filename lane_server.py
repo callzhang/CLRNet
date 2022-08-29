@@ -89,6 +89,14 @@ def test():
 @torch.no_grad()
 @torch.autocast('cuda')
 def inference(image=File(default=None), cut:int = 0, render:bool=False, threshold:float = 0.2):
+    """
+    Inference lane detection on a single image:
+
+    - **image**: image file using **multi-part-form-data**
+    - **cut**: cut size of the sky part, default=0 (calculated automatically 40% of the image height)
+    - **render**: wether to render the result and returning an image, default=False
+    - **threshold**: score threshold to filter out the lanes, default=0.2
+    """
     img_path = f'cache/{image.filename}'
     with open(img_path, 'wb') as f:
         f.write(image.file.read())
@@ -106,7 +114,7 @@ def inference(image=File(default=None), cut:int = 0, render:bool=False, threshol
         # render output
         img = cv2.imread(img_path)
         out_file = f"output/{img_path.split('/')[-1]}"
-        imshow_lanes(img, lanes, out_file=out_file)
+        imshow_lanes(img, lanes, scores=scores, out_file=out_file)
         return FileResponse(out_file)
     else:
         result = {'lanes': lanes, 'scores': scores}
