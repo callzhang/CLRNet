@@ -59,17 +59,19 @@ def load_model():
     processor = Process(cfg.val_process, cfg)
 
 # data processor
-def process(img_path, cut:int=0):
+def process(img_path, cut_ratio:float=0.0):
     img = cv2.imread(img_path)
-    if cut == 0:
+    if cut_ratio == 0:
         # calculate cut according to the height of the image
         # assuming the vanishing point is at the center of the image
         # and cut size is at 40% of the height of the image
-        cut = int(img.shape[0] * 0.4)
-    cfg.cut_height = cut
+        cut_height = int(img.shape[0] * 0.4)
+    else:
+        cut_height = int(img.shape[0] * cut_ratio)
+    cfg.cut_height = cut_height
     cfg.ori_img_h, cfg.ori_img_w = img.shape[:2]
-    cfg.sample_y = range(cfg.ori_img_h, cut, -10)
-    img = img[cut:, :, :]
+    cfg.sample_y = range(cfg.ori_img_h, cut_height, -10)
+    img = img[cut_height:, :, :]
     
     sample = {'img': img, 'lanes': []}
     sample = processor(sample)
@@ -88,7 +90,7 @@ def test():
 @app.post('/inference')
 @torch.no_grad()
 @torch.autocast('cuda')
-def inference(image=File(default=None), cut:int = 0, render:bool=False, threshold:float = 0.2):
+def inference(image=File(default=None), cut_ratio:float = 0.0, render:bool=False, threshold:float = 0.2):
     """
     Inference lane detection on a single image:
 
@@ -101,8 +103,8 @@ def inference(image=File(default=None), cut:int = 0, render:bool=False, threshol
     with open(img_path, 'wb') as f:
         f.write(image.file.read())
     # process image
-    data = process(img_path, cut=cut)
-    logging.info(f'Inference: {image.filename}, cut: {cfg.cut_height}, render: {render}, threshold: {threshold}')
+    data = process(img_path, cut_ratio)
+    logging.info(f'Inference: {image.filename}, cut_ratio: {cfg.cut_height}, render: {render}, threshold: {threshold}')
     # inference
     output = model(data)
     results = model.module.heads.get_lanes(output, threshold=threshold)[0]
