@@ -7,7 +7,7 @@ backbone = dict(
 )
 
 num_points = 72
-max_lanes = 6
+max_lanes = 8
 # sample_y = range(717, 300, -20)
 
 heads = dict(type='CLRHead',

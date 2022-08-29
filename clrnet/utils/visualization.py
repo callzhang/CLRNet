@@ -37,7 +37,7 @@ COLORS = [
 ]
 
 
-def imshow_lanes(img, lanes, show=False, out_file=None, width=4):
+def imshow_lanes(img, lanes, scores=None, show=False, out_file=None, width=4):
     lanes_xys = []
     for _, lane in enumerate(lanes):
         xys = []
@@ -46,10 +46,15 @@ def imshow_lanes(img, lanes, show=False, out_file=None, width=4):
                 continue
             x, y = int(x), int(y)
             xys.append((x, y))
-        lanes_xys.append(xys)
+        if xys:
+            lanes_xys.append(xys)
     lanes_xys.sort(key=lambda xys : xys[0][0])
 
     for idx, xys in enumerate(lanes_xys):
+        if scores:
+            score = scores[idx]
+            mid_point = xys[int(len(xys) / 2)]
+            cv2.putText(img, f'{score:.2f}', mid_point, cv2.FONT_HERSHEY_SIMPLEX, 1, COLORS[idx % len(COLORS)], 2)
         for i in range(1, len(xys)):
             cv2.line(img, xys[i - 1], xys[i], COLORS[idx], thickness=width)
 
