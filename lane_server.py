@@ -99,12 +99,14 @@ def inference(image=File(default=None), cut_ratio:float = 0.0, render:bool=False
     - **render**: wether to render the result and returning an image, default=False
     - **threshold**: score threshold to filter out the lanes, default=0.2
     """
-    img_path = f'cache/{image.filename}'
+    fname = image.filename
+    fname = 'image.jpg' if fname == 'image' else fname
+    img_path = f'cache/{fname}'
     with open(img_path, 'wb') as f:
         f.write(image.file.read())
     # process image
     data = process(img_path, cut_ratio)
-    logging.info(f'Inference: {image.filename}, cut_ratio: {cfg.cut_height}, render: {render}, threshold: {threshold}')
+    logging.info(f'Inference: {fname}, cut_ratio: {cfg.cut_height}, render: {render}, threshold: {threshold}')
     # inference
     output = model(data)
     results = model.module.heads.get_lanes(output, threshold=threshold)[0]
@@ -122,6 +124,12 @@ def inference(image=File(default=None), cut_ratio:float = 0.0, render:bool=False
         result = {'lanes': lanes, 'scores': scores}
         return result
 
+
+def prune_cache(n=1000):
+    images = glob.glob('cache/*', recursive=True)
+    images.sort()
+    for img_path in images[:-n]:
+        os.remove(img_path)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=9020)
