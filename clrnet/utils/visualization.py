@@ -37,7 +37,7 @@ COLORS = [
 ]
 
 
-def imshow_lanes(img, lanes, scores=None, show=False, out_file=None, width=4):
+def imshow_lanes(img, lanes, scores=None, show=False, out_file=None, width=4, cut=0.4):
     lanes_xys = []
     for _, lane in enumerate(lanes):
         xys = []
@@ -58,6 +58,8 @@ def imshow_lanes(img, lanes, scores=None, show=False, out_file=None, width=4):
         for i in range(1, len(xys)):
             cv2.line(img, xys[i - 1], xys[i], COLORS[idx], thickness=width)
 
+    # cut line
+    cv2.line(img, (0, int(img.shape[0] * cut)), (img.shape[1], int(img.shape[0] * cut)), (0,0,255), 1)
 
     if show:
         cv2.imshow('view', img)

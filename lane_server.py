@@ -1,5 +1,5 @@
 
-import os, glob, logging
+import os, glob, logging, time, random
 import torch, cv2
 from clrnet.models.registry import build_net
 from clrnet.utils.net_utils import save_model, load_network, resume_network
@@ -10,7 +10,7 @@ from torchvision import transforms
 from mmcv.parallel import MMDataParallel
 from tqdm import tqdm
 from clrnet.datasets.process import Process
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse
 import uvicorn
 from rich import print
@@ -90,7 +90,7 @@ def test():
 @app.post('/inference')
 @torch.no_grad()
 @torch.autocast('cuda')
-def inference(image=File(default=None), cut_ratio:float = 0.0, render:bool=False, threshold:float = 0.2):
+def inference(image=File(default=None), cut_ratio:float = 0.0, render:bool=False, threshold:float = 0.2, background_tasks: BackgroundTasks = BackgroundTasks()):
     """
     Inference lane detection on a single image:
 
@@ -113,23 +113,33 @@ def inference(image=File(default=None), cut_ratio:float = 0.0, render:bool=False
     lanes = [lane.to_array(cfg) for lane in results]
     scores = [l.metadata['conf'] for l in results]
     logging.info(f"Result: {len(lanes)} lanes with conf: {scores}")
+
+    background_tasks.add_task(prune_cache, 100)
         
     if render:
         # render output
         img = cv2.imread(img_path)
         out_file = f"output/{img_path.split('/')[-1]}"
-        imshow_lanes(img, lanes, scores=scores, out_file=out_file)
+        imshow_lanes(img, lanes, scores=scores,
+                     out_file=out_file, cut=cut_ratio)
         return FileResponse(out_file)
     else:
         result = {'lanes': lanes, 'scores': scores}
         return result
 
 
-def prune_cache(n=1000):
+def prune_cache(n=100):
+    if random.random() < 0.99:
+        return
+    time.sleep(1)
     images = glob.glob('cache/*', recursive=True)
-    images.sort()
-    for img_path in images[:-n]:
-        os.remove(img_path)
+    if len(images) > n:
+        print(f'Pruning cache: {len(images)-n}')
+        images.sort(key=os.path.getmtime)
+        for img_path in images[:len(images)-n]:
+            os.remove(img_path)
+            print(f'Pruned: {img_path}')
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=9020)
+    # prune_cache(n=100)
